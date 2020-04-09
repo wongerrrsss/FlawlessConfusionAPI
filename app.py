@@ -38,7 +38,63 @@ class UserSchema(ma.Schema):
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
 
-#POST
+class AccountInfo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.Integer, nullable=True,)
+    email = db.Column(db.String(), nullable=True,  unique=True)
+    address= db.Column(db.String(), nullable=True)
+    city = db.Column(db.String(), nullable=True)
+    state = db.Column(db.String(), nullable=True)
+    zipcode = db.Column(db.String(), nullable=True)
+
+    def __init__(self, name, email, address, city, state, zipcode):
+        self.name = name
+        self.email = email
+        self.address = address
+        self.city = city
+        self.state = state
+        self.zipcode = zipcode
+        
+class AccountInfoSchema(ma.Schema):
+    class Meta:
+        fields = ("id", "name", "address", "city", "state", "zipcode")
+
+accountinfo_schema = AccountInfoSchema()
+accountinfos_schema = AccountInfoSchema(many=True)
+
+@app.route("/account/adduser", methods=["POST"])
+# route may not work, may need to add custom <id> for each user?
+def add_accountinfo():
+    if request.content_type != "application/json":
+        return jsonify("Error: Error must be sent as JSON data.")
+    post_data = request.get_json()
+    name = post_data.get("name")
+    email = post_data.get("email")
+    address = post_data.get("address")
+    city = post_data.get("city")
+    state = post_data.get("state")
+    zipcode = post_data.get("zipcode")
+    
+
+    record = AccountInfo(name, email, address, city, state, zipcode)
+    db.session.add(record)
+    db.session.commit()
+
+    return jsonify("Successfully updated account information!")
+
+#POST for account info 
+# start get request for account info
+
+@app.route("/users/account", methods=["GET"])
+def get_accountinfo():
+    all_users = db.session.query(AccountInfo).all()
+    return jsonify(accountinfo_schema.dump(AccountInfo))
+
+@app.route("/account/get/by_id/<id>", methods=["GET"])
+def get_accountinfo_by_id(id):
+    user = db.session.query(AccountInfo).filter(AccountInfo.id == id).first()
+    return jsonify(accountinfo_schema.dump(AccountInfo))
+# end get request for account info
 
 @app.route("/user/adduser", methods=["POST"])
 def add_user():
@@ -74,7 +130,7 @@ def update_user(id):
 
     #ENDPuT
 
-#START GET
+#START GET for users
 
 @app.route("/users/get", methods=["GET"])
 def get_all_users():
@@ -91,7 +147,7 @@ def get_user_by_email(email):
     user = db.session.query(User).filter(User.email == email.first())
     return jsonify(user_schema.dump(email))
 
-#END GET
+#END GET of users
 
 if __name__ == "__main__":
     app.debug = True
